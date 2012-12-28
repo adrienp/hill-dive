@@ -14,16 +14,16 @@
         this.path = path;
         this.pos = this.path.at(this.path.start);
         this.vel = new Point(this.minXVel, 0);
-        this.acc = new Point(0, -1);
+        this.acc = new Point(0, 1);
       }
 
-      Flyer.prototype.go = function(dt) {
-        var pathGrad;
+      Flyer.prototype._go = function(dt) {
+        var dot, firstX, func, grad, intersection, pathGrad;
         this.vel = this.vel.add(this.acc.multiply(dt));
         this.vel.x = Math.max(this.vel.x, this.minXVel);
         if (this.onPath) {
           pathGrad = this.path.grad(this.pos.x);
-          if (pathGrad.getDirectedAngle(this.vel) > 0) {
+          if (pathGrad.getDirectedAngle(this.vel) < 0) {
             this.onPath = false;
           } else {
             this.vel = pathGrad.normalize(this.vel.getLength());
@@ -31,14 +31,46 @@
           }
         }
         if (!this.onPath) {
+          firstX = this.pos.x;
           this.pos = this.pos.add(this.vel.multiply(dt));
-          if (this.pos.y < this.path.at(this.pos.x).y) {
+          func = this.getFunc();
+          intersection = this.path.intersect(func.func, func.grad, firstX, this.pos.x, 0.01);
+          if (this.pos.y > this.path.at(this.pos.x).y) {
+            grad = new Point(1, func.grad(intersection)).normalize();
+            pathGrad = this.path.grad(intersection);
+            dot = grad.dot(pathGrad);
             this.vel = this.vel.project(this.path.grad(this.pos.x));
             this.pos = this.path.at(this.pos.x);
             this.onPath = true;
           }
         }
         return this.pos;
+      };
+
+      Flyer.prototype.go = function(dt) {
+        var i, step, _i, _results;
+        step = 1 / 60;
+        _results = [];
+        for (i = _i = 0; 0 <= dt ? _i <= dt : _i >= dt; i = _i += step) {
+          _results.push(this._go(step));
+        }
+        return _results;
+      };
+
+      Flyer.prototype.getFunc = function() {
+        var a, b, c, grad;
+        a = 1 / (2 * this.vel.x * this.vel.x);
+        grad = this.vel.y * (1 / this.vel.x);
+        b = grad - a * 2 * this.pos.x;
+        c = this.pos.y - a * this.pos.x * this.pos.x - b * this.pos.x;
+        return {
+          func: function(x) {
+            return a * x * x + b * x + c;
+          },
+          grad: function(x) {
+            return 2 * a * x + b;
+          }
+        };
       };
 
       return Flyer;

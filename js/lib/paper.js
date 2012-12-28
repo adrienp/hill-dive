@@ -6622,7 +6622,7 @@ var View = this.View = PaperScopeItem.extend({
 		this._matrix.preConcatenate(matrix);
 		this._bounds = null;
 		this._inverse = null;
-		this._redraw();
+		// this._redraw();
 	},
 
 	getCanvas: function() {
@@ -6676,7 +6676,8 @@ var View = this.View = PaperScopeItem.extend({
 	},
 
 	setZoom: function(zoom) {
-		this._transform(new Matrix().scale(zoom / this._zoom, this.getCenter()));
+		// this._transform(new Matrix().scale(zoom / this._zoom, this.getCenter()));
+		this._transform(new Matrix().scale(zoom / this._zoom, this.getBounds().size.multiply(0.5 * this._zoom)));
 		this._zoom = zoom;
 	},
 
@@ -6685,7 +6686,8 @@ var View = this.View = PaperScopeItem.extend({
 	},
 
 	scrollBy: function(point) {
-		this._transform(new Matrix().translate(Point.read(arguments).negate()));
+		// this._transform(new Matrix().translate(Point.read(arguments).negate());
+		this._transform(new Matrix().translate(Point.read(arguments).negate().multiply(this._zoom)));
 	},
 
 	draw: function(checkRedraw) {

@@ -3,9 +3,10 @@
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   define(["paper", "jquery"], function(paper, $) {
-    var Canvas, Path, Point;
+    var Canvas, Matrix, Path, Point;
     Path = paper.Path;
     Point = paper.Point;
+    Matrix = paper.Matrix;
     return Canvas = (function() {
 
       function Canvas(canvasId, path, flyers) {
@@ -19,12 +20,15 @@
         this.$window = $(window);
         this.drawPath = new Path();
         this.drawPath.strokeColor = 'black';
+        this.drawPath.strokeWidth = 0.05;
+        this.drawPath.addSegments(this.path.getPoints());
         _ref = this.flyers;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           flyer = _ref[_i];
-          flyer.drawPath = new Path.Circle(flyer.pos, 3);
+          flyer.drawPath = new Path.Circle(flyer.pos, 0.1);
           flyer.drawPath.fillColor = 'red';
         }
+        this.focus = this.flyers[0];
         this.resize();
         this.$window.resize(this.resize);
         this.view.draw();
@@ -32,39 +36,32 @@
       }
 
       Canvas.prototype.resize = function() {
-        var p, windowSize;
-        windowSize = new Point(this.$window.width() - 4, this.$window.height() - 4);
+        var windowSize;
+        windowSize = new Point(this.$window.width() - 2, this.$window.height() - 2);
         this.view.setViewSize(windowSize);
-        this.zoom = windowSize.x / (this.path.end - this.path.start);
-        this.view.setCenter(new Point((this.path.end + this.path.start) * this.zoom / 2, this.zoom + 10 - (windowSize.y / 2)));
-        this.ceiling = this.view.getBounds().y;
-        this.drawPath.removeSegments();
-        this.drawPath.addSegments((function() {
-          var _i, _len, _ref, _results;
-          _ref = this.path.getPoints();
-          _results = [];
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            p = _ref[_i];
-            _results.push(p.multiply(new Point(this.zoom, -this.zoom)));
-          }
-          return _results;
-        }).call(this));
         return this.draw();
       };
 
+      Canvas.prototype.setFrame = function(centerX, bottom, top) {
+        var height;
+        height = this.view.getViewSize().getHeight();
+        this.view.setCenter(new Point(centerX, (top + bottom) / 2));
+        return this.view.setZoom(height / (bottom - top));
+      };
+
       Canvas.prototype.draw = function() {
-        var flyer, pos, _i, _len, _ref, _results;
+        var bottom, buffer, flyer, top, _i, _len, _ref;
         _ref = this.flyers;
-        _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           flyer = _ref[_i];
-          pos = flyer.pos.multiply(new Point(this.zoom, -this.zoom));
-          if (pos.y < this.ceiling) {
-            flyer.vel.y = -flyer.vel.y;
-          }
-          _results.push(flyer.drawPath.setPosition(pos));
+          flyer.drawPath.setPosition(flyer.pos);
         }
-        return _results;
+        top = Math.min(this.focus.pos.y, this.path.range.top);
+        bottom = this.path.range.bottom;
+        buffer = (bottom - top) * 0.3;
+        top -= buffer;
+        bottom += buffer;
+        return this.setFrame(this.focus.pos.x, bottom, top);
       };
 
       return Canvas;

@@ -22,28 +22,52 @@
     }
   });
 
-  require(["canvas", "path", "flyer", "paper"], function(Canvas, Path, Flyer, paper) {
-    var Point, canvas, flyer, path;
+  require(["canvas", "path", "flyer", "paper", "underscore"], function(Canvas, Path, Flyer, paper, _) {
+    var Point, canvas, down, flyer, flyerPath, path, up;
     path = new Path(Math.sin, Math.cos, Math.PI / 2, Math.PI * 20 + Math.PI / 2, 0.1);
     flyer = new Flyer(path);
     canvas = new Canvas('game', path, [flyer]);
     console.log(path, canvas);
-    canvas.view.setOnFrame(function() {
+    Point = paper.Point;
+    Path = paper.Path;
+    flyerPath = new Path();
+    flyerPath.strokeColor = 'red';
+    flyerPath.strokeWidth = 0.02;
+    canvas.view.setOnFrame(function(e) {
+      var flyerFunc, flyerPathPoints, x;
       flyer.go(1 / 30);
       if (flyer.pos.x > Math.PI * 20 + Math.PI / 2) {
         flyer.pos.x = Math.PI / 2;
       }
+      flyerFunc = flyer.getFunc().func;
+      flyerPathPoints = (function() {
+        var _i, _len, _ref, _results;
+        _ref = _.range(flyer.pos.x, Math.PI * 21, 0.1);
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          x = _ref[_i];
+          _results.push(new Point(x, flyerFunc(x)));
+        }
+        return _results;
+      })();
+      flyerPath.removeSegments();
+      flyerPath.addSegments(flyerPathPoints);
       return canvas.draw();
     });
     Point = paper.Point;
-    $(window).mousedown(function() {
-      flyer.acc = new Point(0, -5);
+    down = function() {
+      flyer.acc = new Point(0, 5);
       return console.log(flyer.acc);
-    });
-    return $(window).mouseup(function() {
-      flyer.acc = new Point(0, -1);
+    };
+    up = function() {
+      flyer.acc = new Point(0, 1);
       return console.log(flyer.acc);
-    });
+    };
+    $(window).mousedown(down);
+    $(window).mouseup(up);
+    $(window).on('touchstart', down);
+    $(window).on('touchend', up);
+    return window.path = path;
   });
 
 }).call(this);
