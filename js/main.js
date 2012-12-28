@@ -22,27 +22,32 @@
     }
   });
 
-  require(["canvas", "path", "flyer", "paper", "underscore"], function(Canvas, Path, Flyer, paper, _) {
-    var Point, canvas, down, flyer, flyerPath, path, up;
-    path = new Path(Math.sin, Math.cos, Math.PI / 2, Math.PI * 20 + Math.PI / 2, 0.1);
+  require(["canvas", "path", "flyer", "paper", "underscore", "randpath"], function(Canvas, Path, Flyer, paper, _, RandPath) {
+    var Point, canvas, down, flyer, flyerPath, freq, left, path, right, up;
+    left = 0;
+    right = 1000;
+    freq = 3;
+    path = new RandPath(left, right, 2, -2, freq, 0.1);
     flyer = new Flyer(path);
     canvas = new Canvas('game', path, [flyer]);
     console.log(path, canvas);
     Point = paper.Point;
     Path = paper.Path;
     flyerPath = new Path();
-    flyerPath.strokeColor = 'red';
+    flyerPath.strokeColor = 'green';
     flyerPath.strokeWidth = 0.02;
+    flyerPath.dashArray = [0.2, 0.1];
     canvas.view.setOnFrame(function(e) {
-      var flyerFunc, flyerPathPoints, x;
+      var b, flyerFunc, flyerPathPoints, x;
       flyer.go(1 / 30);
-      if (flyer.pos.x > Math.PI * 20 + Math.PI / 2) {
-        flyer.pos.x = Math.PI / 2;
+      if (flyer.pos.x > path.end) {
+        flyer.pos.x = path.start;
       }
       flyerFunc = flyer.getFunc().func;
+      b = paper.view.getBounds();
       flyerPathPoints = (function() {
         var _i, _len, _ref, _results;
-        _ref = _.range(flyer.pos.x, Math.PI * 21, 0.1);
+        _ref = _.range(flyer.pos.x, b.x + b.width, 0.1);
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           x = _ref[_i];
@@ -56,12 +61,10 @@
     });
     Point = paper.Point;
     down = function() {
-      flyer.acc = new Point(0, 5);
-      return console.log(flyer.acc);
+      return flyer.acc = new Point(0, 5);
     };
     up = function() {
-      flyer.acc = new Point(0, 1);
-      return console.log(flyer.acc);
+      return flyer.acc = new Point(0, 1);
     };
     $(window).mousedown(down);
     $(window).mouseup(up);

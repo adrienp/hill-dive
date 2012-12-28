@@ -15,6 +15,11 @@ define ["paper", "jquery"], (paper, $) ->
 			@drawPath.strokeWidth = 0.05
 			@drawPath.addSegments(@path.getPoints())
 
+			# @gradPath = new Path()
+			# @gradPath.strokeColor = 'blue'
+			# @gradPath.strokeWidth = 0.05
+			# @gradPath.addSegments(@path.getGradPoints())
+
 			for flyer in @flyers
 				flyer.drawPath = new Path.Circle(flyer.pos, 0.1)
 				flyer.drawPath.fillColor = 'red'
@@ -29,7 +34,7 @@ define ["paper", "jquery"], (paper, $) ->
 			window.v = @view
 
 		resize: =>
-			windowSize = new Point(@$window.width() - 2, @$window.height() - 2)
+			windowSize = new Point(@$window.width() - 4, @$window.height() - 4)
 			@view.setViewSize windowSize
 
 			# @zoom = windowSize.x / (@path.end - @path.start)
@@ -41,12 +46,16 @@ define ["paper", "jquery"], (paper, $) ->
 
 			@draw()
 
-		setFrame: (centerX, bottom, top) ->
+		setFrame: (x, xPerc, bottom, top) ->
 			# bounds = @view.getBounds()
 			height = @view.getViewSize().getHeight()
+			@view.setZoom(height / (bottom - top))
+
+			width = @view.getBounds().width
+			xPerc -= 0.5
+			centerX = x - xPerc * width
 
 			@view.setCenter(new Point(centerX, (top + bottom) / 2))
-			@view.setZoom(height / (bottom - top))
 
 		draw: ->
 			for flyer in @flyers
@@ -63,6 +72,6 @@ define ["paper", "jquery"], (paper, $) ->
 			top -= buffer
 			bottom += buffer
 
-			@setFrame(@focus.pos.x, bottom, top)
+			@setFrame(@focus.pos.x, 0.15, bottom, top)
 			# @setFrame(Math.PI / 10, 4, -4)
 

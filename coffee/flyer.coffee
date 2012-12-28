@@ -3,17 +3,21 @@ define ["paper"], (paper) ->
 
 	class Flyer
 		onPath: yes
-		minXVel: 1
+		minSpeed: 0.5
+		minXVel: 0.1
 
 		constructor: (@path) ->
 			@pos = @path.at(@path.start)
-			@vel = new Point @minXVel, 0
+			@vel = new Point @minSpeed, 0
 			@acc = new Point 0, 1
 
 		_go: (dt) ->
 			@vel = @vel.add @acc.multiply(dt)
 
 			@vel.x = Math.max @vel.x, @minXVel
+
+			if @vel.getLength() < @minSpeed
+				@vel = @vel.normalize @minSpeed
 			
 			if @onPath
 				pathGrad = @path.grad(@pos.x)
@@ -21,6 +25,8 @@ define ["paper"], (paper) ->
 				if pathGrad.getDirectedAngle(@vel) < 0
 					# Jumping off path
 					@onPath = no
+					console.log "JUMP"
+					console.log "Pos:", @pos, "Path:", pathGrad, "Vel:", @vel
 				else
 					# Staying on path
 					@vel = pathGrad.normalize @vel.getLength()
@@ -44,11 +50,17 @@ define ["paper"], (paper) ->
 					# 	reflection = @vel.subtract(@vel.project(normal).multiply(2)).multiply(0.5)
 					# 	refLength = reflection.getLength()
 					# 	@vel = reflection
-					# 	if @vel.x < @minXVel
-					# 		@vel.y = Math.sqrt refLength * refLength - @minXVel * @minXVel
+					# 	if @vel.x < @minSpeed
+					# 		@vel.y = Math.sqrt refLength * refLength - @minSpeed * @minSpeed
 					# 	@pos = @path.at(intersection)
 					# else
-					@vel = @vel.project @path.grad(@pos.x)
+					console.log "HIT"
+					console.log @vel, @path.grad(@pos.x)
+					if grad.getAngle(pathGrad) < 90
+						@vel = @vel.project @path.grad(@pos.x)
+					else
+						@vel = new Point(0, 0)
+					console.log @vel
 					@pos = @path.at @pos.x
 					@onPath = yes
 

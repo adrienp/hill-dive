@@ -10,6 +10,9 @@ define ["paper", "underscore", "util"], (paper, _, util) ->
 		getPoints: ->
 			(@at(x) for x in _.range(@start, @end + @step, @step))
 
+		getGradPoints: ->
+			(new Point(x, @gradFunc(x)) for x in _.range(@start, @end + @step, @step))
+
 		_range: (left, right) ->
 			# Compute the y-range within the bounds
 			leftY = @func(left)

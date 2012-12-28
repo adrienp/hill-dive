@@ -37,16 +37,19 @@
 
       Canvas.prototype.resize = function() {
         var windowSize;
-        windowSize = new Point(this.$window.width() - 2, this.$window.height() - 2);
+        windowSize = new Point(this.$window.width() - 4, this.$window.height() - 4);
         this.view.setViewSize(windowSize);
         return this.draw();
       };
 
-      Canvas.prototype.setFrame = function(centerX, bottom, top) {
-        var height;
+      Canvas.prototype.setFrame = function(x, xPerc, bottom, top) {
+        var centerX, height, width;
         height = this.view.getViewSize().getHeight();
-        this.view.setCenter(new Point(centerX, (top + bottom) / 2));
-        return this.view.setZoom(height / (bottom - top));
+        this.view.setZoom(height / (bottom - top));
+        width = this.view.getBounds().width;
+        xPerc -= 0.5;
+        centerX = x - xPerc * width;
+        return this.view.setCenter(new Point(centerX, (top + bottom) / 2));
       };
 
       Canvas.prototype.draw = function() {
@@ -61,7 +64,7 @@
         buffer = (bottom - top) * 0.3;
         top -= buffer;
         bottom += buffer;
-        return this.setFrame(this.focus.pos.x, bottom, top);
+        return this.setFrame(this.focus.pos.x, 0.15, bottom, top);
       };
 
       return Canvas;

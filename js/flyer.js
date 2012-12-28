@@ -8,12 +8,14 @@
 
       Flyer.prototype.onPath = true;
 
-      Flyer.prototype.minXVel = 1;
+      Flyer.prototype.minSpeed = 0.5;
+
+      Flyer.prototype.minXVel = 0.1;
 
       function Flyer(path) {
         this.path = path;
         this.pos = this.path.at(this.path.start);
-        this.vel = new Point(this.minXVel, 0);
+        this.vel = new Point(this.minSpeed, 0);
         this.acc = new Point(0, 1);
       }
 
@@ -21,10 +23,15 @@
         var dot, firstX, func, grad, intersection, pathGrad;
         this.vel = this.vel.add(this.acc.multiply(dt));
         this.vel.x = Math.max(this.vel.x, this.minXVel);
+        if (this.vel.getLength() < this.minSpeed) {
+          this.vel = this.vel.normalize(this.minSpeed);
+        }
         if (this.onPath) {
           pathGrad = this.path.grad(this.pos.x);
           if (pathGrad.getDirectedAngle(this.vel) < 0) {
             this.onPath = false;
+            console.log("JUMP");
+            console.log("Pos:", this.pos, "Path:", pathGrad, "Vel:", this.vel);
           } else {
             this.vel = pathGrad.normalize(this.vel.getLength());
             this.pos = this.path.at(this.pos.add(this.vel.multiply(dt)).x);
@@ -39,7 +46,14 @@
             grad = new Point(1, func.grad(intersection)).normalize();
             pathGrad = this.path.grad(intersection);
             dot = grad.dot(pathGrad);
-            this.vel = this.vel.project(this.path.grad(this.pos.x));
+            console.log("HIT");
+            console.log(this.vel, this.path.grad(this.pos.x));
+            if (grad.getAngle(pathGrad) < 90) {
+              this.vel = this.vel.project(this.path.grad(this.pos.x));
+            } else {
+              this.vel = new Point(0, 0);
+            }
+            console.log(this.vel);
             this.pos = this.path.at(this.pos.x);
             this.onPath = true;
           }

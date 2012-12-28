@@ -4493,7 +4493,22 @@ var Path = this.Path = PathItem.extend({
 	function drawSegments(ctx, path) {
 		var segments = path._segments,
 			length = segments.length,
+			minX = window.bounds ? window.bounds.x : 0,
+			minY = window.bounds ? window.bounds.y : 0,
+			maxX = window.bounds ? window.bounds.x + window.bounds.width : 0,
+			maxY = window.bounds ? window.bounds.y + window.bounds.height : 0,
+			drew = false,
+			segIn = [],
 			handleOut, outX, outY;
+
+		function inBounds(x, y) {
+			return x >= minX && x <= maxX && y >= minY && y <= maxY;
+		}
+		function isIn(i) {
+			if (i < 0 || i >= length)
+				return false;
+			return segIn[i];
+		}
 
 		function drawSegment(i) {
 			var segment = segments[i],
@@ -4501,8 +4516,34 @@ var Path = this.Path = PathItem.extend({
 				x = point._x,
 				y = point._y,
 				handleIn = segment._handleIn;
+			if ((isIn(i) || isIn(i + 1)) && (!drew || !handleOut)) {
+			// if (!handleOut) {
+				ctx.moveTo(x, y);
+				drew = true;
+			} else if (drew) {
+				if (handleIn.isZero() && handleOut.isZero()) {
+					ctx.lineTo(x, y);
+				} else {
+					ctx.bezierCurveTo(outX, outY,
+							handleIn._x + x, handleIn._y + y, x, y);
+				}
+				drew = isIn(i);
+			} else {
+				drew = false;
+			}
+			handleOut = segment._handleOut;
+			outX = handleOut._x + x;
+			outY = handleOut._y + y;
+		}
+		function drawSegmentClosed(i) {
+			var segment = segments[i],
+				point = segment._point,
+				x = point._x,
+				y = point._y,
+				handleIn = segment._handleIn;
 			if (!handleOut) {
 				ctx.moveTo(x, y);
+				drew = true;
 			} else {
 				if (handleIn.isZero() && handleOut.isZero()) {
 					ctx.lineTo(x, y);
@@ -4515,9 +4556,18 @@ var Path = this.Path = PathItem.extend({
 			outX = handleOut._x + x;
 			outY = handleOut._y + y;
 		}
-
 		for (var i = 0; i < length; i++)
-			drawSegment(i);
+			segIn[i] = inBounds(segments[i]._point._x, segments[i]._point._y);
+
+		if (path._closed) {
+			for (var i = 0; i < length; i++)
+				drawSegmentClosed(i);
+		}
+		else {
+			for (var i = 0; i < length; i++)
+				drawSegment(i);
+		}
+		
 		if (path._closed && length > 1)
 			drawSegment(0);
 	}
@@ -6757,6 +6807,7 @@ var View = this.View = PaperScopeItem.extend({
 				count: count++
 			}));
 			before = now;
+			window.bounds = that.getBounds();
 			that.draw(true);
 		};
 		if (!requested)

@@ -32,6 +32,17 @@
         return _results;
       };
 
+      Path.prototype.getGradPoints = function() {
+        var x, _i, _len, _ref, _results;
+        _ref = _.range(this.start, this.end + this.step, this.step);
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          x = _ref[_i];
+          _results.push(new Point(x, this.gradFunc(x)));
+        }
+        return _results;
+      };
+
       Path.prototype._range = function(left, right) {
         var leftY, ret, x, y, _i, _ref;
         leftY = this.func(left);

@@ -15,18 +15,27 @@ require.config
 		underscore:
 			exports: "_"
 
-require ["canvas", "path", "flyer", "paper", "underscore"], (Canvas, Path, Flyer, paper, _) ->
-	path = new Path Math.sin, Math.cos, Math.PI / 2, Math.PI * 20 + Math.PI / 2, 0.1
+require ["canvas", "path", "flyer", "paper", "underscore", "randpath"], (Canvas, Path, Flyer, paper, _, RandPath) ->
+	# path = new Path Math.sin, Math.cos, Math.PI / 2, Math.PI * 400 + Math.PI / 2, 0.1
+	left = 0
+	right = 1000
+	freq = 3
+	path = new RandPath left, right, 2, -2, freq, 0.1
 	flyer = new Flyer path
 	canvas = new Canvas('game', path, [flyer])
 	console.log path, canvas
+
+	# for x in [left...right] by freq
+	# 	c = new paper.Path.Circle(x, 0, 0.3)
+	# 	c.fillColor = 'green'
 
 	Point = paper.Point
 	Path = paper.Path
 
 	flyerPath = new Path()
-	flyerPath.strokeColor = 'red'
+	flyerPath.strokeColor = 'green'
 	flyerPath.strokeWidth = 0.02
+	flyerPath.dashArray = [0.2, 0.1]
 
 	canvas.view.setOnFrame (e) ->
 		# path.at = (x) ->
@@ -36,17 +45,18 @@ require ["canvas", "path", "flyer", "paper", "underscore"], (Canvas, Path, Flyer
 
 		flyer.go(1 / 30)
 
-		if flyer.pos.x > Math.PI * 20 + Math.PI / 2
-			flyer.pos.x = Math.PI / 2
+		if flyer.pos.x > path.end
+			flyer.pos.x = path.start
 		# if flyer.pos.y > 10
 		# 	flyer.pos.y = 10
 
 		flyerFunc = flyer.getFunc().func
-		flyerPathPoints = (new Point(x, flyerFunc(x)) for x in _.range(flyer.pos.x, Math.PI * 21, 0.1))
+		b = paper.view.getBounds()
+		flyerPathPoints = (new Point(x, flyerFunc(x)) for x in _.range(flyer.pos.x, b.x + b.width, 0.1))
 		# flyerPathPoints = (new Point(x, flyerFunc(x)) for x in _.range(Math.PI / 2, Math.PI * 21, 0.1))
 		flyerPath.removeSegments()
 		flyerPath.addSegments(flyerPathPoints)
-		# console.log e.delta
+		# console.log e.delta * 60
 		# if e.delta > 1 / 60
 		canvas.draw()
 
@@ -54,11 +64,11 @@ require ["canvas", "path", "flyer", "paper", "underscore"], (Canvas, Path, Flyer
 
 	down = ->
 		flyer.acc = new Point(0, 5)
-		console.log flyer.acc
+		# console.log flyer.acc
 
 	up = ->
 		flyer.acc = new Point(0, 1)
-		console.log flyer.acc
+		# console.log flyer.acc
 
 	$(window).mousedown down
 
