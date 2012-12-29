@@ -2,11 +2,12 @@
 (function() {
 
   define(["paper", "underscore", "util"], function(paper, _, util) {
-    var Path, Point;
-    Point = paper.Point;
+    var Gradient, GradientColor, Path, Point;
+    Point = paper.Point, Gradient = paper.Gradient, GradientColor = paper.GradientColor;
     return Path = (function() {
 
       function Path(func, gradFunc, start, end, step) {
+        var grad;
         this.func = func;
         this.gradFunc = gradFunc;
         this.start = start;
@@ -19,6 +20,14 @@
           return new Point(1, this.gradFunc(x)).normalize();
         };
         this.range = this._range(this.start, this.end);
+        grad = new Gradient(["#98FA37", "#2A8000"]);
+        grad = new GradientColor(grad, new Point(0, this.range.top), new Point(0, this.range.bottom + this.range.span));
+        this.drawPath = new paper.Path();
+        this.drawPath._hill = true;
+        this.drawPath.strokeColor = 'black';
+        this.drawPath.strokeWidth = 0.05;
+        this.drawPath.fillColor = grad;
+        this.drawPath.addSegments(this.getPoints());
       }
 
       Path.prototype.getPoints = function() {
@@ -59,6 +68,7 @@
             ret.bottom = y;
           }
         }
+        ret.span = ret.bottom - ret.top;
         return ret;
       };
 

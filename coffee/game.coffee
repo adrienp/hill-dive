@@ -1,2 +1,2 @@
 define ["flyer"], (Flyer) ->
-	
+    

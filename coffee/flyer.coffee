@@ -1,86 +1,129 @@
 define ["paper"], (paper) ->
-	Point = paper.Point
+    {Point, Raster, Size} = paper
 
-	class Flyer
-		onPath: yes
-		minSpeed: 0.5
-		minXVel: 0.1
+    class Flyer
+        onPath: yes
+        minSpeed: 0.5
+        minXVel: 0.1
 
-		constructor: (@path) ->
-			@pos = @path.at(@path.start)
-			@vel = new Point @minSpeed, 0
-			@acc = new Point 0, 1
+        time: 0
+        timeStep: 1 / 60
+        remTime: 0
 
-		_go: (dt) ->
-			@vel = @vel.add @acc.multiply(dt)
+        upAcc: new Point 0, 1
+        downAcc: new Point 0, 5
 
-			@vel.x = Math.max @vel.x, @minXVel
+        constructor: (@path, imgId) ->
+            @pos = @path.at(@path.start)
+            @vel = new Point @minSpeed, 0
+            @acc = @upAcc
 
-			if @vel.getLength() < @minSpeed
-				@vel = @vel.normalize @minSpeed
-			
-			if @onPath
-				pathGrad = @path.grad(@pos.x)
+            loadImg = =>
+                @raster = new Raster(imgId)
+                size = @raster.getSize().height
 
-				if pathGrad.getDirectedAngle(@vel) < 0
-					# Jumping off path
-					@onPath = no
-					console.log "JUMP"
-					console.log "Pos:", @pos, "Path:", pathGrad, "Vel:", @vel
-				else
-					# Staying on path
-					@vel = pathGrad.normalize @vel.getLength()
-					@pos = @path.at(@pos.add(@vel.multiply(dt)).x)
-			if not @onPath
-				firstX = @pos.x
-				@pos = @pos.add @vel.multiply(dt)
+                if size > 128
+                    @raster.setSize new Size(128, 128)
+                    size = 128
 
-				func = @getFunc()
-				intersection = @path.intersect(func.func, func.grad, firstX, @pos.x, 0.01)
+                @raster.scale 1 / size
+                @raster.rot = 0
 
-				if @pos.y > @path.at(@pos.x).y
-					# If path collision
-					grad = new Point(1, func.grad(intersection)).normalize()
-					pathGrad = @path.grad(intersection)
-					dot = grad.dot(pathGrad)
+            if $("##{imgId}")[0].complete
+                loadImg()
+            else
+                $("##{imgId}").load loadImg
 
-					# if dot < 0.3
-					# 	# Bounce
-					# 	normal = new Point(pathGrad.y, -pathGrad.x)
-					# 	reflection = @vel.subtract(@vel.project(normal).multiply(2)).multiply(0.5)
-					# 	refLength = reflection.getLength()
-					# 	@vel = reflection
-					# 	if @vel.x < @minSpeed
-					# 		@vel.y = Math.sqrt refLength * refLength - @minSpeed * @minSpeed
-					# 	@pos = @path.at(intersection)
-					# else
-					console.log "HIT"
-					console.log @vel, @path.grad(@pos.x)
-					if grad.getAngle(pathGrad) < 90
-						@vel = @vel.project @path.grad(@pos.x)
-					else
-						@vel = new Point(0, 0)
-					console.log @vel
-					@pos = @path.at @pos.x
-					@onPath = yes
+        _go: (dt) ->
+            @vel = @vel.add @acc.multiply(dt)
 
-			@pos
+            @vel.x = Math.max @vel.x, @minXVel
 
-		go: (dt) ->
-			step = 1 / 60
+            if @vel.getLength() < @minSpeed
+                @vel = @vel.normalize @minSpeed
+            
+            if @onPath
+                pathGrad = @path.grad(@pos.x)
 
-			for i in [0..dt] by step
-				@_go(step)
+                if pathGrad.getDirectedAngle(@vel) < 0
+                    # Jumping off path
+                    @onPath = no
+                else
+                    # Staying on path
+                    @vel = pathGrad.normalize @vel.getLength()
+                    @pos = @path.at(@pos.add(@vel.multiply(dt)).x)
+            if not @onPath
+                firstX = @pos.x
+                @pos = @pos.add @vel.multiply(dt)
 
-		getFunc: ->
-			a = 1 / (2 * @vel.x * @vel.x)
+                func = @getFunc()
+                intersection = @path.intersect(func.func, func.grad, firstX, @pos.x, 0.01)
 
-			grad = @vel.y * (1 / @vel.x)
+                if @pos.y > @path.at(@pos.x).y
+                    # If path collision
+                    grad = new Point(1, func.grad(intersection)).normalize()
+                    pathGrad = @path.grad(intersection)
+                    if grad.getAngle(pathGrad) < 90
+                        @vel = @vel.project @path.grad(@pos.x)
+                    else
+                        @vel = new Point(0, 0)
+                    @pos = @path.at @pos.x
+                    @onPath = yes
 
-			b = grad - a * 2 * @pos.x
+            @pos
+
+        go: (dt) ->
+            dt += @remTime
+            steps = 0
+
+            while dt >= @timeStep
+                @_go @timeStep
+                dt -= @timeStep
+                steps += 1
+
+            # console.log steps, dt
+            @remTime = dt
+
+        draw: ->
+            if @raster
+                pos = @getPosition().add(@vel.rotate(-90).normalize(0.5))
+                @raster.setPosition pos
+                rot = @vel.angle - @raster.rot
+                @raster.rotate rot
+                @raster.rot += rot
+
+        getPosition: ->
+            @pos.add @vel.multiply(@remTime)
+
+        upHandler: =>
+            @acc = @upAcc
+
+        downHandler: =>
+            @acc = @downAcc
+
+        setupControl: (el) ->
+            $el = $(el)
+
+            $el.on
+                "mousedown touchstart": @downHandler
+                "mouseup touchend": @upHandler
+
+        finishControl: (el) ->
+            $el = $(el)
+
+            $el.off
+                "mousedown touchstart": @downHandler
+                "mouseup touchend": @upHandler
+
+        getFunc: ->
+            a = 1 / (2 * @vel.x * @vel.x)
+
+            grad = @vel.y * (1 / @vel.x)
+
+            b = grad - a * 2 * @pos.x
 
 
-			c = @pos.y - a*@pos.x*@pos.x - b*@pos.x
+            c = @pos.y - a*@pos.x*@pos.x - b*@pos.x
 
-			func: (x) -> a*x*x + b*x + c
-			grad: (x) -> 2*a*x + b
+            func: (x) -> a*x*x + b*x + c
+            grad: (x) -> 2*a*x + b

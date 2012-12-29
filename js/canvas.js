@@ -7,44 +7,17 @@
     Path = paper.Path, Point = paper.Point, Matrix = paper.Matrix, Raster = paper.Raster, Size = paper.Size, Group = paper.Group, Layer = paper.Layer, Gradient = paper.Gradient, GradientColor = paper.GradientColor;
     return Canvas = (function() {
 
-      function Canvas(canvasId, path, flyers) {
-        var flyer, grad, loadBird, _i, _len, _ref;
-        this.path = path;
-        this.flyers = flyers;
+      function Canvas(canvasId) {
         this.resize = __bind(this.resize, this);
 
+        var grad;
         paper.setup(canvasId);
         this.view = paper.view;
         this.$window = $(window);
-        this.sky = new Path.Rectangle(new Point(this.path.start - 5, 2), new Point(this.path.end + 5, -10));
+        this.sky = new Path.Rectangle(new Point(0, 0), new Point(1, 1));
         grad = new Gradient(["#AADAFA", "#027ED1"]);
-        grad = new GradientColor(grad, new Point(0, -10), new Point(0, 2));
+        grad = new GradientColor(grad, new Point(0, 0), new Point(0, 1));
         this.sky.fillColor = grad;
-        grad = new Gradient(["#98FA37", "#2A8000"]);
-        grad = new GradientColor(grad, new Point(0, -2), new Point(0, 5));
-        this.drawPath = new Path();
-        this.drawPath._hill = true;
-        this.drawPath.strokeColor = 'black';
-        this.drawPath.strokeWidth = 0.05;
-        this.drawPath.fillColor = grad;
-        this.drawPath.addSegments(this.path.getPoints());
-        _ref = this.flyers;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          flyer = _ref[_i];
-          loadBird = function() {
-            flyer.raster = new Raster('bird');
-            flyer.raster.setSize(new Size(128, 128));
-            flyer.raster.scale(1 / 128);
-            flyer.raster.rot = 0;
-            return window.raster = flyer.raster;
-          };
-          if ($('#bird')[0].complete) {
-            loadBird();
-          } else {
-            $('#bird').load(loadBird);
-          }
-        }
-        this.focus = this.flyers[0];
         this.resize();
         this.$window.resize(this.resize);
         this.view.draw();
@@ -68,27 +41,36 @@
         return this.view.setCenter(new Point(centerX, (top + bottom) / 2));
       };
 
-      Canvas.prototype.draw = function() {
-        var bottom, buffer, flyer, pos, rot, top, _i, _len, _ref, _ref1;
-        _ref = this.flyers;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          flyer = _ref[_i];
-          if (flyer.raster) {
-            pos = flyer.pos.add(flyer.vel.rotate(-90).normalize(0.5));
-            flyer.raster.setPosition(pos);
-            rot = flyer.vel.angle - flyer.raster.rot;
-            if ((_ref1 = flyer.raster) != null) {
-              _ref1.rotate(rot);
-            }
-            flyer.raster.rot += rot;
-          }
+      Canvas.prototype.showAll = function() {
+        var width;
+        if (this.path) {
+          width = this.view.getViewSize().getWidth();
+          this.view.setZoom(width / (this.path.end - this.path.start));
+          return this.view.setCenter(new Point((this.path.end + this.path.start) / 2, (this.path.range.bottom + this.path.range.top) / 2));
         }
-        top = Math.min(this.focus.pos.y, this.path.range.top);
-        bottom = this.path.range.bottom;
-        buffer = (bottom - top) * 0.3;
-        top -= buffer;
-        bottom += buffer;
-        return this.setFrame(this.focus.pos.x, 0.15, bottom, top);
+      };
+
+      Canvas.prototype.draw = function() {
+        var bottom, bounds, buffer, focusPos, grad, top;
+        if (this.focus) {
+          focusPos = this.focus.getPosition();
+          top = Math.min(focusPos.y, this.path.range.top);
+          bottom = this.path.range.bottom;
+          buffer = (bottom - top) * 0.3;
+          top -= buffer;
+          bottom += buffer;
+          this.setFrame(focusPos.x, 0.15, bottom, top);
+        } else {
+          this.showAll();
+        }
+        bounds = this.view.getBounds();
+        this.sky.segments[0].setPoint(new Point(bounds.x, bounds.y));
+        this.sky.segments[1].setPoint(new Point(bounds.x + bounds.width, bounds.y));
+        this.sky.segments[2].setPoint(new Point(bounds.x + bounds.width, bounds.y + bounds.height));
+        this.sky.segments[3].setPoint(new Point(bounds.x, bounds.y + bounds.height));
+        grad = new Gradient(["#AADAFA", "#027ED1"]);
+        grad = new GradientColor(grad, new Point(0, bounds.y), new Point(0, bounds.y + bounds.height));
+        return this.sky.fillColor = grad;
       };
 
       return Canvas;

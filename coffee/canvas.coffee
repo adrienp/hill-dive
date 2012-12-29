@@ -1,120 +1,72 @@
 define ["paper", "jquery"], (paper, $) ->
-	{Path, Point, Matrix, Raster, Size, Group, Layer, Gradient, GradientColor} = paper
-	
-	class Canvas
-		constructor: (canvasId, @path, @flyers) ->
-			paper.setup canvasId
-			@view = paper.view
+    {Path, Point, Matrix, Raster, Size, Group, Layer, Gradient, GradientColor} = paper
+    
+    class Canvas
+        constructor: (canvasId) ->
+            paper.setup canvasId
+            @view = paper.view
 
-			@$window = $(window)
+            @$window = $(window)
 
-			@sky = new Path.Rectangle(new Point(@path.start - 5, 2), new Point(@path.end + 5, -10))
-			grad = new Gradient(["#AADAFA", "#027ED1"])
-			grad = new GradientColor(grad, new Point(0, -10), new Point(0, 2))
-			@sky.fillColor = grad
+            @sky = new Path.Rectangle(new Point(0, 0), new Point(1, 1))
+            grad = new Gradient(["#AADAFA", "#027ED1"])
+            grad = new GradientColor(grad, new Point(0, 0), new Point(0, 1))
+            @sky.fillColor = grad
 
-			grad = new Gradient(["#98FA37", "#2A8000"])
-			grad = new GradientColor(grad, new Point(0, -2), new Point(0, 5))
+            @resize()
+            @$window.resize @resize
 
-			@drawPath = new Path()
-			@drawPath._hill = true
-			@drawPath.strokeColor = 'black'
-			@drawPath.strokeWidth = 0.05
-			@drawPath.fillColor = grad
-			@drawPath.addSegments(@path.getPoints())
+            @view.draw()
 
-			# dot = new Path.Circle(new Point(3, 0), 2)
-			# dot.fillColor = 'red'
+            window.v = @view
 
-			
-			# g.opacity = 0.99
+        resize: =>
+            windowSize = new Point(@$window.width() - 4, @$window.height() - 4)
+            @view.setViewSize windowSize
 
-			# @gradPath = new Path()
-			# @gradPath.strokeColor = 'blue'
-			# @gradPath.strokeWidth = 0.05
-			# @gradPath.addSegments(@path.getGradPoints())
+            @draw()
 
-			# l = new Layer()
+        setFrame: (x, xPerc, bottom, top) ->
+            # bounds = @view.getBounds()
+            height = @view.getViewSize().getHeight()
+            @view.setZoom(height / (bottom - top))
 
-			for flyer in @flyers
-				loadBird = ->
-					flyer.raster = new Raster('bird')
-					flyer.raster.setSize new Size(128, 128)
-					flyer.raster.scale 1 / 128
-					flyer.raster.rot = 0
-					window.raster = flyer.raster
+            width = @view.getBounds().width
+            xPerc -= 0.5
+            centerX = x - xPerc * width
 
-				if $('#bird')[0].complete
-					loadBird()
-				else
-					$('#bird').load loadBird
-				# flyer.raster.setSize(new Size(100, 100))
-				# flyer.raster.setPosition @view.getCenter()
-				# flyer.drawPath = new Path.Circle(flyer.pos, 0.1)
-				# flyer.drawPath.fillColor = 'red'
+            @view.setCenter(new Point(centerX, (top + bottom) / 2))
 
-			# l = new Layer()
-			# clipPath = @drawPath.clone()
-			# clipPath._hill = true
+        showAll: ->
+            if @path
+                width = @view.getViewSize().getWidth()
 
-			# g = new Group([clipPath, dot])
-			# g.setClipped(true)
-			# window.clipGroup = g
+                @view.setZoom width / (@path.end - @path.start)
 
-			@focus = @flyers[0]
+                @view.setCenter new Point((@path.end + @path.start) / 2, (@path.range.bottom + @path.range.top) / 2)
 
-			@resize()
-			@$window.resize @resize
+        draw: ->
+            if @focus
+                focusPos = @focus.getPosition()
+                top = Math.min(focusPos.y, @path.range.top)
+                bottom = @path.range.bottom
 
-			@view.draw()
+                buffer = (bottom - top) * 0.3
 
-			window.v = @view
+                top -= buffer
+                bottom += buffer
 
-		resize: =>
-			windowSize = new Point(@$window.width() - 4, @$window.height() - 4)
-			@view.setViewSize windowSize
+                @setFrame(focusPos.x, 0.15, bottom, top)
+            else
+                @showAll()
 
-			# @zoom = windowSize.x / (@path.end - @path.start)
-			# @view.setCenter new Point((@path.end + @path.start) * @zoom / 2, @zoom + 10 - (windowSize.y / 2))
-			# @ceiling = @view.getBounds().y
+            bounds = @view.getBounds()
 
-			# @drawPath.removeSegments()
-			# @drawPath.addSegments(@transformPoints(@path.getPoints()))
+            @sky.segments[0].setPoint new Point(bounds.x, bounds.y)
+            @sky.segments[1].setPoint new Point(bounds.x + bounds.width, bounds.y)
+            @sky.segments[2].setPoint new Point(bounds.x + bounds.width, bounds.y + bounds.height)
+            @sky.segments[3].setPoint new Point(bounds.x, bounds.y + bounds.height)
 
-			@draw()
-
-		setFrame: (x, xPerc, bottom, top) ->
-			# bounds = @view.getBounds()
-			height = @view.getViewSize().getHeight()
-			@view.setZoom(height / (bottom - top))
-
-			width = @view.getBounds().width
-			xPerc -= 0.5
-			centerX = x - xPerc * width
-
-			@view.setCenter(new Point(centerX, (top + bottom) / 2))
-
-		draw: ->
-			for flyer in @flyers
-				# pos = flyer.pos
-				# if pos.y < @ceiling
-				# 	flyer.vel.y = -flyer.vel.y
-				# flyer.drawPath.setPosition flyer.pos
-				if flyer.raster
-					pos = flyer.pos.add(flyer.vel.rotate(-90).normalize(0.5))
-					flyer.raster.setPosition pos
-					rot = flyer.vel.angle - flyer.raster.rot
-					flyer.raster?.rotate rot
-					flyer.raster.rot += rot
-
-			top = Math.min(@focus.pos.y, @path.range.top)
-			bottom = @path.range.bottom
-
-			buffer = (bottom - top) * 0.3
-
-			top -= buffer
-			bottom += buffer
-
-			@setFrame(@focus.pos.x, 0.15, bottom, top)
-			# @setFrame(Math.PI / 10, 4, -4)
-
+            grad = new Gradient(["#AADAFA", "#027ED1"])
+            grad = new GradientColor(grad, new Point(0, bounds.y), new Point(0, bounds.y + bounds.height))
+            @sky.fillColor = grad

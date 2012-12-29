@@ -1,0 +1,32 @@
+application: hill
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: yes
+
+handlers:
+- url: /favicon\.ico
+  static_files: favicon.ico
+  upload: favicon\.ico
+
+- url: /
+  static_files: index.html
+  upload: index\.html
+
+- url: /js
+  static_dir: js
+
+- url: /stylesheets
+  static_dir: stylesheets
+
+- url: /birds
+  static_dir: birds
+
+- url: .*
+  script: main.app
+
+libraries:
+- name: webapp2
+  version: latest
+- name: jinja2
+  version: latest

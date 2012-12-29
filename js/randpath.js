@@ -9,22 +9,13 @@
 
       __extends(RandPath, _super);
 
-      function RandPath(left, right, top, bottom, freq, step) {
-        var amp, cubic, func, grad, i,
+      function RandPath(yvals, left, freq, step) {
+        var cubic, func, grad, right,
           _this = this;
-        amp = bottom - top;
-        this.yvals = (function() {
-          var _i, _len, _ref, _results;
-          _ref = _.range(left, right + freq, freq);
-          _results = [];
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            i = _ref[_i];
-            _results.push(Math.random() * amp + top);
-          }
-          return _results;
-        })();
+        this.yvals = yvals;
+        right = left + (this.yvals.length - 1) * freq;
         cubic = function(x) {
-          var m1, m2, p0, p1, p2, p3;
+          var i, m1, m2, p0, p1, p2, p3;
           i = Math.floor((x - left) / freq);
           x -= i * freq;
           x /= freq;
@@ -58,6 +49,22 @@
       RandPath.prototype.yval = function(i) {
         i = Math.max(Math.min(i, this.yvals.length - 1), 0);
         return this.yvals[i];
+      };
+
+      RandPath.make = function(left, right, top, bottom, freq, step) {
+        var amp, i, yvals;
+        amp = bottom - top;
+        yvals = (function() {
+          var _i, _len, _ref, _results;
+          _ref = _.range(left, right + freq, freq);
+          _results = [];
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            i = _ref[_i];
+            _results.push(Math.random() * amp + top);
+          }
+          return _results;
+        })();
+        return new RandPath(yvals, left, freq, step);
       };
 
       return RandPath;

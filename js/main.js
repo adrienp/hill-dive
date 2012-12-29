@@ -23,34 +23,21 @@
   });
 
   require(["canvas", "path", "flyer", "paper", "underscore", "randpath"], function(Canvas, Path, Flyer, paper, _, RandPath) {
-    var Point, canvas, down, flyer, freq, left, path, right, up;
+    var canvas, flyer, freq, left, path, right;
     left = 0;
     right = 1000;
     freq = 3;
-    path = new RandPath(left, right, 2, -2, freq, 0.1);
-    flyer = new Flyer(path);
-    canvas = new Canvas('game', path, [flyer]);
-    console.log(path, canvas);
-    Point = paper.Point;
-    Path = paper.Path;
+    canvas = new Canvas('game');
+    path = RandPath.make(left, right, 2, -2, freq, 0.1);
+    flyer = new Flyer(path, 'bird');
+    canvas.focus = flyer;
+    canvas.path = path;
+    flyer.setupControl(window);
     canvas.view.setOnFrame(function(e) {
-      flyer.go(1 / 30);
-      if (flyer.pos.x > path.end) {
-        flyer.pos.x = path.start;
-      }
-      return canvas.draw();
+      flyer.go(e.delta * 3);
+      canvas.draw();
+      return flyer.draw();
     });
-    Point = paper.Point;
-    down = function() {
-      return flyer.acc = new Point(0, 5);
-    };
-    up = function() {
-      return flyer.acc = new Point(0, 1);
-    };
-    $(window).mousedown(down);
-    $(window).mouseup(up);
-    $(window).on('touchstart', down);
-    $(window).on('touchend', up);
     return window.path = path;
   });
 

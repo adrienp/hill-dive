@@ -4501,6 +4501,8 @@ var Path = this.Path = PathItem.extend({
 			maxY = window.bounds ? window.bounds.y + window.bounds.height : 0,
 			drew = false,
 			segIn = [],
+			firstY = segments[0]._point._y,
+			lastY = segments[length - 1]._point._y,
 			handleOut, outX, outY;
 
 		function inBounds(x, y) {
@@ -4559,9 +4561,11 @@ var Path = this.Path = PathItem.extend({
 			outY = handleOut._y + y;
 		}
 		function drawHill() {
-			ctx.lineTo(maxX + 0.05, maxY + 0.05);
-			ctx.lineTo(minX - 0.05, maxY + 0.05);
-			drawSegment(0);
+			ctx.lineTo(maxX + 1, lastY);
+			ctx.lineTo(maxX + 1, maxY + 1);
+			ctx.lineTo(minX - 1, maxY + 1);
+			ctx.lineTo(minX - 1, firstY);
+			ctx.lineTo(segments[0]._point._x, firstY);
 		}
 		for (var i = 0; i < length; i++)
 			segIn[i] = inBounds(segments[i]._point._x, segments[i]._point._y);
