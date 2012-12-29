@@ -2622,6 +2622,8 @@ var Group = this.Group = Item.extend({
 			if (item != clipItem)
 				Item.draw(item, ctx, param);
 		}
+		if (clipItem)
+			ctx.restore()
 	}
 });
 
@@ -4556,20 +4558,30 @@ var Path = this.Path = PathItem.extend({
 			outX = handleOut._x + x;
 			outY = handleOut._y + y;
 		}
+		function drawHill() {
+			ctx.lineTo(maxX + 0.05, maxY + 0.05);
+			ctx.lineTo(minX - 0.05, maxY + 0.05);
+			drawSegment(0);
+		}
 		for (var i = 0; i < length; i++)
 			segIn[i] = inBounds(segments[i]._point._x, segments[i]._point._y);
 
 		if (path._closed) {
 			for (var i = 0; i < length; i++)
 				drawSegmentClosed(i);
+
+			if (length > 1)
+				drawSegment(0);
 		}
 		else {
 			for (var i = 0; i < length; i++)
 				drawSegment(i);
+
+			if (path._hill)
+				drawHill();
 		}
 		
-		if (path._closed && length > 1)
-			drawSegment(0);
+		
 	}
 
 	function drawDashes(ctx, path, dashArray, dashOffset) {

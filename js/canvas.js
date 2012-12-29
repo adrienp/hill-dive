@@ -3,14 +3,12 @@
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   define(["paper", "jquery"], function(paper, $) {
-    var Canvas, Matrix, Path, Point;
-    Path = paper.Path;
-    Point = paper.Point;
-    Matrix = paper.Matrix;
+    var Canvas, Gradient, GradientColor, Group, Layer, Matrix, Path, Point, Raster, Size;
+    Path = paper.Path, Point = paper.Point, Matrix = paper.Matrix, Raster = paper.Raster, Size = paper.Size, Group = paper.Group, Layer = paper.Layer, Gradient = paper.Gradient, GradientColor = paper.GradientColor;
     return Canvas = (function() {
 
       function Canvas(canvasId, path, flyers) {
-        var flyer, _i, _len, _ref;
+        var flyer, grad, loadBird, _i, _len, _ref;
         this.path = path;
         this.flyers = flyers;
         this.resize = __bind(this.resize, this);
@@ -18,15 +16,33 @@
         paper.setup(canvasId);
         this.view = paper.view;
         this.$window = $(window);
+        this.sky = new Path.Rectangle(new Point(this.path.start - 5, 2), new Point(this.path.end + 5, -10));
+        grad = new Gradient(["#AADAFA", "#027ED1"]);
+        grad = new GradientColor(grad, new Point(0, -10), new Point(0, 2));
+        this.sky.fillColor = grad;
+        grad = new Gradient(["#98FA37", "#2A8000"]);
+        grad = new GradientColor(grad, new Point(0, -2), new Point(0, 5));
         this.drawPath = new Path();
+        this.drawPath._hill = true;
         this.drawPath.strokeColor = 'black';
         this.drawPath.strokeWidth = 0.05;
+        this.drawPath.fillColor = grad;
         this.drawPath.addSegments(this.path.getPoints());
         _ref = this.flyers;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           flyer = _ref[_i];
-          flyer.drawPath = new Path.Circle(flyer.pos, 0.1);
-          flyer.drawPath.fillColor = 'red';
+          loadBird = function() {
+            flyer.raster = new Raster('bird');
+            flyer.raster.setSize(new Size(128, 128));
+            flyer.raster.scale(1 / 128);
+            flyer.raster.rot = 0;
+            return window.raster = flyer.raster;
+          };
+          if ($('#bird')[0].complete) {
+            loadBird();
+          } else {
+            $('#bird').load(loadBird);
+          }
         }
         this.focus = this.flyers[0];
         this.resize();
@@ -53,11 +69,19 @@
       };
 
       Canvas.prototype.draw = function() {
-        var bottom, buffer, flyer, top, _i, _len, _ref;
+        var bottom, buffer, flyer, pos, rot, top, _i, _len, _ref, _ref1;
         _ref = this.flyers;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           flyer = _ref[_i];
-          flyer.drawPath.setPosition(flyer.pos);
+          if (flyer.raster) {
+            pos = flyer.pos.add(flyer.vel.rotate(-90).normalize(0.5));
+            flyer.raster.setPosition(pos);
+            rot = flyer.vel.angle - flyer.raster.rot;
+            if ((_ref1 = flyer.raster) != null) {
+              _ref1.rotate(rot);
+            }
+            flyer.raster.rot += rot;
+          }
         }
         top = Math.min(this.focus.pos.y, this.path.range.top);
         bottom = this.path.range.bottom;

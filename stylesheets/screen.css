@@ -66,3 +66,13 @@ a img {
 article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section, summary {
   display: block;
 }
+
+/* line 8, ../sass/screen.sass */
+#game {
+  background-color: #aadafa;
+}
+
+/* line 11, ../sass/screen.sass */
+#assets {
+  display: none;
+}

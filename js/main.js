@@ -23,7 +23,7 @@
   });
 
   require(["canvas", "path", "flyer", "paper", "underscore", "randpath"], function(Canvas, Path, Flyer, paper, _, RandPath) {
-    var Point, canvas, down, flyer, flyerPath, freq, left, path, right, up;
+    var Point, canvas, down, flyer, freq, left, path, right, up;
     left = 0;
     right = 1000;
     freq = 3;
@@ -33,30 +33,11 @@
     console.log(path, canvas);
     Point = paper.Point;
     Path = paper.Path;
-    flyerPath = new Path();
-    flyerPath.strokeColor = 'green';
-    flyerPath.strokeWidth = 0.02;
-    flyerPath.dashArray = [0.2, 0.1];
     canvas.view.setOnFrame(function(e) {
-      var b, flyerFunc, flyerPathPoints, x;
       flyer.go(1 / 30);
       if (flyer.pos.x > path.end) {
         flyer.pos.x = path.start;
       }
-      flyerFunc = flyer.getFunc().func;
-      b = paper.view.getBounds();
-      flyerPathPoints = (function() {
-        var _i, _len, _ref, _results;
-        _ref = _.range(flyer.pos.x, b.x + b.width, 0.1);
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          x = _ref[_i];
-          _results.push(new Point(x, flyerFunc(x)));
-        }
-        return _results;
-      })();
-      flyerPath.removeSegments();
-      flyerPath.addSegments(flyerPathPoints);
       return canvas.draw();
     });
     Point = paper.Point;
