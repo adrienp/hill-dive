@@ -1,5 +1,5 @@
-application: hill
-version: 1
+application: hill-dive
+version: 0
 runtime: python27
 api_version: 1
 threadsafe: yes
