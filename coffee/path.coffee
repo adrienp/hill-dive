@@ -23,6 +23,9 @@ define ["paper", "underscore", "util"], (paper, _, util) ->
         getGradPoints: ->
             (new Point(x, @gradFunc(x)) for x in _.range(@start, @end + @step, @step))
 
+        remove: ->
+            @drawPath.remove()
+
         _range: (left, right) ->
             # Compute the y-range within the bounds
             leftY = @func(left)
@@ -30,7 +33,7 @@ define ["paper", "underscore", "util"], (paper, _, util) ->
                 top: leftY
                 bottom: leftY
 
-            for x in [left...right] by @step
+            for x in [left..right] by @step
                 y = @func(x)
 
                 if y < ret.top

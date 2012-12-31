@@ -52,6 +52,10 @@
         return _results;
       };
 
+      Path.prototype.remove = function() {
+        return this.drawPath.remove();
+      };
+
       Path.prototype._range = function(left, right) {
         var leftY, ret, x, y, _i, _ref;
         leftY = this.func(left);
@@ -59,7 +63,7 @@
           top: leftY,
           bottom: leftY
         };
-        for (x = _i = left, _ref = this.step; left <= right ? _i < right : _i > right; x = _i += _ref) {
+        for (x = _i = left, _ref = this.step; left <= right ? _i <= right : _i >= right; x = _i += _ref) {
           y = this.func(x);
           if (y < ret.top) {
             ret.top = y;

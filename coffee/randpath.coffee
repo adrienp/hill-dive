@@ -2,6 +2,8 @@ define ['path', 'underscore', 'paper'], (Path, _, paper) ->
 
     class RandPath extends Path
         constructor: (@yvals, left, freq, step) ->
+            @freq = freq
+            
             right = left + (@yvals.length - 1) * freq
 
             cubic = (x) =>
@@ -14,8 +16,11 @@ define ['path', 'underscore', 'paper'], (Path, _, paper) ->
                 p2 = @yval(i + 1)
                 p3 = @yval(i + 2)
 
-                m1 = (p2 - p0) / (2 * freq)
-                m2 = (p3 - p1) / (2 * freq)
+                # m1 = (p2 - p0) / (2 * freq)
+                # m2 = (p3 - p1) / (2 * freq)
+
+                m1 = (p2 - p0) / 2
+                m2 = (p3 - p1) / 2
 
                 a: 2*p1 - 2*p2 + m1 + m2
                 b: -3*p1 + 3*p2 - 2*m1 - m2
@@ -39,8 +44,7 @@ define ['path', 'underscore', 'paper'], (Path, _, paper) ->
             i = Math.max(Math.min(i, @yvals.length - 1), 0)
             @yvals[i]
 
-        @make = (left, right, top, bottom, freq, step) ->
-            amp = bottom - top
-            yvals = (Math.random() * amp + top for i in _.range(left, right + freq, freq))
+        @make = (length, amp, freq, step) ->
+            yvals = (Math.random() * amp for i in _.range(0, length + freq, freq))
 
-            new RandPath yvals, left, freq, step
+            new RandPath yvals, 0, freq, step

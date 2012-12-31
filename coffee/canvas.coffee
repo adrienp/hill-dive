@@ -8,11 +8,6 @@ define ["paper", "jquery"], (paper, $) ->
 
             @$window = $(window)
 
-            @sky = new Path.Rectangle(new Point(0, 0), new Point(1, 1))
-            grad = new Gradient(["#AADAFA", "#027ED1"])
-            grad = new GradientColor(grad, new Point(0, 0), new Point(0, 1))
-            @sky.fillColor = grad
-
             @resize()
             @$window.resize @resize
 
@@ -60,13 +55,5 @@ define ["paper", "jquery"], (paper, $) ->
             else
                 @showAll()
 
-            bounds = @view.getBounds()
-
-            @sky.segments[0].setPoint new Point(bounds.x, bounds.y)
-            @sky.segments[1].setPoint new Point(bounds.x + bounds.width, bounds.y)
-            @sky.segments[2].setPoint new Point(bounds.x + bounds.width, bounds.y + bounds.height)
-            @sky.segments[3].setPoint new Point(bounds.x, bounds.y + bounds.height)
-
-            grad = new Gradient(["#AADAFA", "#027ED1"])
-            grad = new GradientColor(grad, new Point(0, bounds.y), new Point(0, bounds.y + bounds.height))
-            @sky.fillColor = grad
+        clear: ->
+            paper.project.activeLayer.removeChildren()

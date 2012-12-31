@@ -1,15 +1,16 @@
-define ["goog", "jquery"], (goog, $) ->
+define ["goog", "jquery", "events"], (goog, $, Events) ->
 
-    class Channel
-        constructor: (name) ->
-            @events = {}
+    class Channel extends Events
+        constructor: (name, success) ->
+            super()
 
             $.post '/connect',
                 name: name,
                 (resp) =>
                     if resp.success
-                        @token = resp.token
-                        @uid = resp.uid
+                        @user = resp
+                        token = resp.token
+                        uid = resp.uid
 
                         @channel = new goog.appengine.Channel(token)
                         @socket = @channel.open()
@@ -19,6 +20,7 @@ define ["goog", "jquery"], (goog, $) ->
 
                         @socket.onmessage = (msg) =>
                             msg = JSON.parse msg.data
+                            console.log "Message:", msg
                             @trigger msg.type, msg
 
                         @socket.onerror = (e) ->
@@ -27,18 +29,8 @@ define ["goog", "jquery"], (goog, $) ->
                         @socket.onclose = ->
                             console.log "Socket Closed"
 
-        trigger: (eventType, msg) ->
-            if eventType of @events
-                (fn(msg) for fn in @events[eventType])
+                        if success
+                            success @user
+                    else
+                        console.error "Can't connect", resp
 
-        on: (eventType, fn) ->
-            if eventType not of @events
-                @events[eventType] = []
-
-            @events[eventType].push fn
-
-        off: (eventType, fn) ->
-            i = @events[eventType]?.indexOf fn
-
-            if i? >= 0
-                @events[eventType].splice(i, 1)

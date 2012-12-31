@@ -39,8 +39,8 @@ class Game(db.Model):
     host = db.StringProperty()
     users = db.StringListProperty()
     state = db.IntegerProperty()
-    results = db.StringProperty()
-    data = db.StringProperty()
+    results = db.TextProperty()
+    data = db.TextProperty()
 
     def toJson(self):
         return {
@@ -49,12 +49,13 @@ class Game(db.Model):
             'host': self.host,
             'users': self.users,
             'state': self.state,
-            'results': json.loads(self.results),
-            'data': json.loads(self.data)
+            'results': json.loads(self.results or "{}"),
+            'data': json.loads(self.data or "{}")
         }
 
 def jsonResponse(fn):
     def wrapped(self, *args, **kwargs):
+        self.response.headers["Content-Type"] = "application/json"
         self.response.write(json.dumps(fn(self, *args, **kwargs)))
     return wrapped
 
@@ -100,7 +101,8 @@ class ConnectHandler(webapp2.RequestHandler):
 
         return success({
             'token': tk,
-            'uid': uid
+            'uid': uid,
+            'name': name
         })
 
 class GamesHandler(webapp2.RequestHandler):
@@ -129,9 +131,7 @@ class GamesHandler(webapp2.RequestHandler):
 
         game.put()
 
-        return success({
-            'gid': gid
-        })
+        return success(game.toJson())
 
     @jsonResponse
     def get(self):
@@ -177,6 +177,7 @@ class JoinGameHandler(webapp2.RequestHandler):
         msg = {
             'gid': gid,
             'uid': uid,
+            'name': user.name,
             'type': 'join'
         }
 
@@ -194,8 +195,11 @@ class StartGameHandler(webapp2.RequestHandler):
         if not game:
             return error("No such game: " + gid)
 
-        if uid != game.host:
-            return error("You are not the host")
+        if uid not in game.users:
+            return error("You are not in this game")
+
+        if game.state != GameState.BEFORE:
+            return error("Game has already been started")
 
         game.state = GameState.PLAYING
         game.put()
@@ -220,12 +224,14 @@ class FlyerHandler(webapp2.RequestHandler):
         if uid not in game.users:
             return error("User not in this game")
 
+        if game.state != GameState.PLAYING:
+            return error("Game not in progress")
+
         msg = {
             'gid': gid,
             'uid': uid,
             'type': 'fly',
-            'time': self.request.get('time'),
-            'data': json.loads(self.request.get('data'))
+            'msg': json.loads(self.request.get('msg'))
         }
 
         broadcast(msg, game.users, uid)
@@ -243,12 +249,12 @@ class FlyerFinishHandler(webapp2.RequestHandler):
         if uid not in game.users:
             return error("User not in this game")
 
-        results = json.loads(game.results)
+        results = json.loads(game.results or "{}")
 
         if uid in results:
             return error("User already finished")
 
-        time = self.request.get('time')
+        time = float(self.request.get('time'))
 
         results[uid] = time
 
@@ -267,7 +273,7 @@ class FlyerFinishHandler(webapp2.RequestHandler):
             msg = {
                 'gid': gid,
                 'uid': uid,
-                'type': 'finish'
+                'type': 'finish',
                 'time': time
             }
 

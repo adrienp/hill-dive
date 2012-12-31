@@ -13,6 +13,7 @@
         var cubic, func, grad, right,
           _this = this;
         this.yvals = yvals;
+        this.freq = freq;
         right = left + (this.yvals.length - 1) * freq;
         cubic = function(x) {
           var i, m1, m2, p0, p1, p2, p3;
@@ -23,8 +24,8 @@
           p1 = _this.yval(i);
           p2 = _this.yval(i + 1);
           p3 = _this.yval(i + 2);
-          m1 = (p2 - p0) / (2 * freq);
-          m2 = (p3 - p1) / (2 * freq);
+          m1 = (p2 - p0) / 2;
+          m2 = (p3 - p1) / 2;
           return {
             a: 2 * p1 - 2 * p2 + m1 + m2,
             b: -3 * p1 + 3 * p2 - 2 * m1 - m2,
@@ -51,20 +52,19 @@
         return this.yvals[i];
       };
 
-      RandPath.make = function(left, right, top, bottom, freq, step) {
-        var amp, i, yvals;
-        amp = bottom - top;
+      RandPath.make = function(length, amp, freq, step) {
+        var i, yvals;
         yvals = (function() {
           var _i, _len, _ref, _results;
-          _ref = _.range(left, right + freq, freq);
+          _ref = _.range(0, length + freq, freq);
           _results = [];
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             i = _ref[_i];
-            _results.push(Math.random() * amp + top);
+            _results.push(Math.random() * amp);
           }
           return _results;
         })();
-        return new RandPath(yvals, left, freq, step);
+        return new RandPath(yvals, 0, freq, step);
       };
 
       return RandPath;

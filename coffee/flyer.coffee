@@ -1,22 +1,33 @@
-define ["paper"], (paper) ->
+define ["paper", "events", "jquery"], (paper, Events, $) ->
     {Point, Raster, Size} = paper
 
-    class Flyer
+    class Flyer extends Events
         onPath: yes
-        minSpeed: 0.5
-        minXVel: 0.1
+        minSpeed: 1.5
+        minXVel: 0.3
 
         time: 0
-        timeStep: 1 / 60
+        clock: 0
+        timeStep: 1 / 180
         remTime: 0
 
-        upAcc: new Point 0, 1
-        downAcc: new Point 0, 5
+        upAcc: new Point 0, 5
+        downAcc: new Point 0, 25
+
+        lastMessage: null
 
         constructor: (@path, imgId) ->
+            super()
+
             @pos = @path.at(@path.start)
             @vel = new Point @minSpeed, 0
             @acc = @upAcc
+
+            @time = 0
+            @clock = 0
+            @onPath = yes
+            @remTime = 0
+            @lastMessage = null
 
             loadImg = =>
                 @raster = new Raster(imgId)
@@ -28,13 +39,19 @@ define ["paper"], (paper) ->
 
                 @raster.scale 1 / size
                 @raster.rot = 0
+                @draw()
+
+            src = $("##{imgId}").attr('src')
+            @progress = $("<img class='progress' src='#{src}'>")
+            $('#progress').append @progress
 
             if $("##{imgId}")[0].complete
                 loadImg()
             else
                 $("##{imgId}").load loadImg
 
-        _go: (dt) ->
+        _go: ->
+            dt = @timeStep
             @vel = @vel.add @acc.multiply(dt)
 
             @vel.x = Math.max @vel.x, @minXVel
@@ -70,19 +87,36 @@ define ["paper"], (paper) ->
                     @pos = @path.at @pos.x
                     @onPath = yes
 
+            @clock += 1
+            @time = @clock * @timeStep
+
+            if @pos.x >= @path.end
+                @finish()
+
             @pos
 
         go: (dt) ->
             dt += @remTime
-            steps = 0
+            steps = Math.floor(dt / @timeStep)
 
-            while dt >= @timeStep
-                @_go @timeStep
-                dt -= @timeStep
-                steps += 1
+            for i in [0...steps] by 1
+                @_go()
 
             # console.log steps, dt
-            @remTime = dt
+            @remTime = dt % @timeStep
+            @time += @remTime
+
+            if @lastMessage? and not @lastMessage.done and @lastMessage.time < @time
+                console.log "Running postponed message", @lastMessage
+                @_doMessage @lastMessage
+
+        goto: (time) ->
+            @go time - @time
+
+        finish: ->
+            if not @finished
+                @trigger "finish", @time
+                @finished = true
 
         draw: ->
             if @raster
@@ -92,28 +126,81 @@ define ["paper"], (paper) ->
                 @raster.rotate rot
                 @raster.rot += rot
 
+            perc = (@pos.x - @path.start) * 100 / (@path.end - @path.start)
+
+            @progress.css 'left', "#{perc}%"
+
         getPosition: ->
             @pos.add @vel.multiply(@remTime)
 
-        upHandler: =>
+        upHandler: (e) =>
+            e.preventDefault()
             @acc = @upAcc
+            @trigger "msg",
+                state: "up"
+                pos: @pos
+                vel: @vel
+                time: @time
+                onPath: @onPath
 
-        downHandler: =>
+        downHandler: (e) =>
+            e.preventDefault()
             @acc = @downAcc
+            @trigger "msg",
+                state: "down"
+                pos: @pos
+                vel: @vel
+                time: @time
+                onPath: @onPath
+
+        _doMessage: (msg) ->
+            msg.done = true
+
+            @pos = new Point(msg.pos.x, msg.pos.y)
+            @vel = new Point(msg.vel.x, msg.vel.y)
+            @onPath = msg.onPath
+
+            if msg.state is "down"
+                @acc = @downAcc
+            else
+                @acc = @upAcc
+
+            gotoTime = @time
+            @time = msg.time
+            @clock = Math.floor @time / @timeStep
+            @remTime = @time % @timeStep
+
+            @goto gotoTime
+
+            console.log "Time before:", gotoTime, "Msg:", msg.time, "Now:", @time
+
+        receive: (msg) ->
+            if not @lastMessage or @lastMessage.time < msg.time
+                if msg.time < @time
+                    @_doMessage msg
+                else
+                    console.log "Postponed message. Time:", @time, "Message:", msg
+                @lastMessage = msg
+            else
+                console.log "Out of order messages.", @lastMessage, msg
 
         setupControl: (el) ->
             $el = $(el)
 
             $el.on
-                "mousedown touchstart": @downHandler
-                "mouseup touchend": @upHandler
+                "mousedown touchstart keydown": @downHandler
+                "mouseup touchend keyup": @upHandler
 
         finishControl: (el) ->
             $el = $(el)
 
             $el.off
-                "mousedown touchstart": @downHandler
-                "mouseup touchend": @upHandler
+                "mousedown touchstart keydown": @downHandler
+                "mouseup touchend keyup": @upHandler
+
+        remove: ->
+            @raster.remove()
+            @progress.remove()
 
         getFunc: ->
             a = 1 / (2 * @vel.x * @vel.x)

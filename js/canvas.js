@@ -9,15 +9,9 @@
 
       function Canvas(canvasId) {
         this.resize = __bind(this.resize, this);
-
-        var grad;
         paper.setup(canvasId);
         this.view = paper.view;
         this.$window = $(window);
-        this.sky = new Path.Rectangle(new Point(0, 0), new Point(1, 1));
-        grad = new Gradient(["#AADAFA", "#027ED1"]);
-        grad = new GradientColor(grad, new Point(0, 0), new Point(0, 1));
-        this.sky.fillColor = grad;
         this.resize();
         this.$window.resize(this.resize);
         this.view.draw();
@@ -51,7 +45,7 @@
       };
 
       Canvas.prototype.draw = function() {
-        var bottom, bounds, buffer, focusPos, grad, top;
+        var bottom, buffer, focusPos, top;
         if (this.focus) {
           focusPos = this.focus.getPosition();
           top = Math.min(focusPos.y, this.path.range.top);
@@ -59,18 +53,14 @@
           buffer = (bottom - top) * 0.3;
           top -= buffer;
           bottom += buffer;
-          this.setFrame(focusPos.x, 0.15, bottom, top);
+          return this.setFrame(focusPos.x, 0.15, bottom, top);
         } else {
-          this.showAll();
+          return this.showAll();
         }
-        bounds = this.view.getBounds();
-        this.sky.segments[0].setPoint(new Point(bounds.x, bounds.y));
-        this.sky.segments[1].setPoint(new Point(bounds.x + bounds.width, bounds.y));
-        this.sky.segments[2].setPoint(new Point(bounds.x + bounds.width, bounds.y + bounds.height));
-        this.sky.segments[3].setPoint(new Point(bounds.x, bounds.y + bounds.height));
-        grad = new Gradient(["#AADAFA", "#027ED1"]);
-        grad = new GradientColor(grad, new Point(0, bounds.y), new Point(0, bounds.y + bounds.height));
-        return this.sky.fillColor = grad;
+      };
+
+      Canvas.prototype.clear = function() {
+        return paper.project.activeLayer.removeChildren();
       };
 
       return Canvas;

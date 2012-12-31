@@ -7,8 +7,70 @@
     </head>
     <body>
         <canvas width="600" height="400" id="game"></canvas>
+        <div id="fps"></div>
+        <div id="progress"></div>
+        <div id="panel-layer">
+            <div id="panel">
+                <div class="current" id="name">
+                    <h1>Hill Thing</h1>
+                    <form id="name-form">
+                        <label for="name-txt">What's your name?</label><br>
+                        <input type="text" name="name" id="name-txt"><br>
+                        <input type="submit" value="Go!">
+                    </form>
+                </div>
+                <div id="loading">
+                    <h1>Loading...</h1>
+                </div>
+                <div id="games">
+                    <h1>Games</h1>
+                    <button id="new-game-btn">New Game</button>
+                    <button id="refresh-games-btn">Refresh</button>
+                    <ul id="game-list">
+                    </ul>
+                </div>
+                <div id="new-game">
+                    <h1>New Game</h1>
+                    <form id="new-game-form">
+                        <p>
+                            <label for="game-name-txt">Game Name:</label>
+                            <input type="text" name="name" id="game-name-txt">
+                        </p>
+                        <p>
+                            <label for="length-num">Length:</label>
+                            <input type="number" name="length" value="1000" id="length-num">
+                        </p>
+                        <p>
+                            <label for="height-num">Height:</label>
+                            <input type="number" name="height" value="4" id="height-num">
+                        </p>
+                        <p>
+                            <label for="freq-num">Frequency:</label>
+                            <input type="number" name="freq" value="3" title="Lower numbers make bumpier hills" id="freq-num">
+                        </p>
+                        <p class="submit">
+                            <input type="submit" value="Make Game!">
+                        </p>
+                    </form>
+                </div>
+                <div id="game-room">
+                    <h1 id="game-name">Game</h1>
+                    <h2>Members</h2>
+                    <ul id="members"></ul>
+                    <button id="start-btn">Start!</button>
+                </div>
+                <div id="results">
+                    <h1>Results</h1>
+                    <ul id="result-list"></ul>
+                    <button id="done-btn">Done</button>
+                </div>
+            </div>
+        </div>
         <div id="assets">
-            <img id="bird" src="birds/yellow.png">
+            <img id="blue" src="birds/blue.png">
+            <img id="yellow" src="birds/yellow.png">
+            <img id="red" src="birds/red.png">
+            <img id="green" src="birds/green.png">
         </div>
     </body>
 </html>
