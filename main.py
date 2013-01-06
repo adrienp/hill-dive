@@ -30,6 +30,7 @@ from uuid import uuid4 as uuid
 class User(db.Model):
     name = db.StringProperty()
     token = db.StringProperty()
+    connected = db.BooleanProperty(default=False)
 
 class GameState:
     BEFORE, PLAYING, FINISHED = range(3)
@@ -69,8 +70,12 @@ def success(o = {}):
     o['success'] = True
     return o
 
-def broadcast(msg, users, sender=None):
+def broadcast(msg, users=None, sender=None):
     msg = json.dumps(msg)
+
+    if users is None:
+        users = [u.key().name() for u in User.all().filter("connected = ", True).run()]
+
     [channel.send_message(u, msg) for u in users if u != sender]
 
 class MsgHandler(webapp2.RequestHandler):
@@ -130,6 +135,12 @@ class GamesHandler(webapp2.RequestHandler):
             data=data)
 
         game.put()
+
+        broadcast({
+            'type': 'gameCreate',
+            'gid': gid,
+            'name': name
+            })
 
         return success(game.toJson())
 
@@ -203,6 +214,11 @@ class StartGameHandler(webapp2.RequestHandler):
 
         game.state = GameState.PLAYING
         game.put()
+
+        broadcast({
+            'type': 'gameStart',
+            'gid': gid
+            })
 
         msg = {
             'gid': gid,
@@ -284,6 +300,34 @@ class FlyerFinishHandler(webapp2.RequestHandler):
 
         return success()
 
+class ChannelConnectHandler(webapp2.RequestHandler):
+    def post(self):
+        uid = self.request.get("from")
+        user = User.get_by_key_name(uid)
+
+        if not user:
+            return error("User does not exist")
+
+        user.connected = True
+
+        user.put()
+
+class ChannelDisconnectHandler(webapp2.RequestHandler):
+    def post(self):
+        uid = self.request.get("from")
+        user = User.get_by_key_name(uid)
+
+        if not user:
+            return error("User does not exist")
+
+        user.connected = False
+
+        user.put()
+
+class UsersHandler(webapp2.RequestHandler):
+    @jsonResponse
+    def get(self):
+        return [u.key().name() for u in User.all().filter("connected = ", True).run()]
 
 class SendHandler(webapp2.RequestHandler):
     def post(self):
@@ -317,5 +361,7 @@ app = webapp2.WSGIApplication([
     ('/games/(.*)/(.*)', FlyerHandler),
     ('/games/(.*)', GameHandler),
     ('/games', GamesHandler),
-    ('/send', SendHandler)
+    ('/users', UsersHandler),
+    ('/_ah/channel/connected/', ChannelConnectHandler),
+    ('/_ah/channel/disconnected/', ChannelDisconnectHandler)
 ], debug=True)

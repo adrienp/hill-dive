@@ -49,6 +49,7 @@
         $('#start-btn').on("click", this.startGame);
         $('#done-btn').on("click", this.doneBtn);
         this.canvas = new Canvas('game');
+        this.$games = {};
       }
 
       Main.prototype.panel = function(id) {
@@ -60,15 +61,22 @@
         }
       };
 
+      Main.prototype.make$Game = function(game) {
+        return $("<li><button class='join' data-gid='" + game.gid + "'>Join</button> " + game.name + "</li>");
+      };
+
       Main.prototype.refreshGames = function() {
         var _this = this;
         return $.get("/games", function(games) {
-          var game, _i, _len, _results;
+          var $game, game, _i, _len, _results;
           $('#game-list').empty();
+          _this.$games = {};
           _results = [];
           for (_i = 0, _len = games.length; _i < _len; _i++) {
             game = games[_i];
-            _results.push($('#game-list').append("<li><button class='join' data-gid='" + game.gid + "'>Join</button> " + game.name + "</li>"));
+            $game = _this.make$Game(game);
+            _this.$games[game.gid] = $game;
+            _results.push($('#game-list').append($game));
           }
           return _results;
         });
@@ -134,9 +142,21 @@
           _this.panel("games");
           return _this.refreshGames();
         });
-        return this.channel.on("join", function(user) {
+        this.channel.on("join", function(user) {
           $('#members').append("<li>" + user.name + "</li>");
           return _this.game.addFlyer(user);
+        });
+        this.channel.on("gameCreate", function(game) {
+          var $game;
+          $game = _this.make$Game(game);
+          _this.$games[game.gid] = $game;
+          return $("#game-list").append($game);
+        });
+        return this.channel.on("gameStart", function(game) {
+          var $game;
+          $game = _this.$games[game.gid];
+          $game.remove();
+          return delete _this.$games[game.gid];
         });
       };
 

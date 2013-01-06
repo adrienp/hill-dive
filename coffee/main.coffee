@@ -28,6 +28,7 @@ require ["jquery", "canvas", "channel", "randpath", "game"], ($, Canvas, Channel
 			$('#done-btn').on "click", @doneBtn
 
 			@canvas = new Canvas 'game'
+			@$games = {}
 
 		panel: (id) ->
 			if id
@@ -36,13 +37,19 @@ require ["jquery", "canvas", "channel", "randpath", "game"], ($, Canvas, Channel
 			else
 				$('#panel').hide()
 
+		make$Game: (game) ->
+			$("<li><button class='join' data-gid='#{game.gid}'>Join</button> #{game.name}</li>")
+
 		refreshGames: =>
 			$.get "/games",
 				(games) =>
 					$('#game-list').empty()
+					@$games = {}
 
 					for game in games
-						$('#game-list').append "<li><button class='join' data-gid='#{game.gid}'>Join</button> #{game.name}</li>"
+						$game = @make$Game game
+						@$games[game.gid] = $game
+						$('#game-list').append $game
 
 		doneBtn: =>
 			@panel "games"
@@ -105,6 +112,18 @@ require ["jquery", "canvas", "channel", "randpath", "game"], ($, Canvas, Channel
 				(user) =>
 					$('#members').append "<li>#{user.name}</li>"
 					@game.addFlyer user
+
+			@channel.on "gameCreate",
+				(game) =>
+					$game = @make$Game game
+					@$games[game.gid] = $game
+					$("#game-list").append $game
+
+			@channel.on "gameStart",
+				(game) =>
+					$game = @$games[game.gid]
+					$game.remove()
+					delete @$games[game.gid]
 
 		newGameBtn: =>
 			@panel "new-game"
